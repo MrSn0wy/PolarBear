@@ -1,13 +1,13 @@
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpStream;
 
-use native_tls::TlsStream;
-
 use crate::println_green;
 use crate::response_handler::response_builder;
 
+//use native_tls::TlsStream;
+
 pub(crate) enum RequestType {
-    Https(TlsStream<TcpStream>),
+    Https(TcpStream),
     Http(TcpStream),
 }
 
