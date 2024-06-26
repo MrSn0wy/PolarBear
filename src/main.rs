@@ -3,13 +3,13 @@ use std::net::TcpListener;
 use std::thread;
 use std::time::Instant;
 
+use artic_tls::tls_handler;
+
 use crate::request_handler::{request_handler, RequestType};
-use crate::tls_handler::tls_handler;
 
 mod response_handler;
 mod request_handler;
 mod macros;
-mod tls_handler;
 
 //fn connection_listener_https() -> anyhow::Result<()> {
 //    let cert_file = fs::read(Path::new("cert.pem"))?;
