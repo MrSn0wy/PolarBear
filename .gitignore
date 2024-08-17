@@ -6,3 +6,9 @@ style.css
 key.pem
 cert.pem
 /src/artic_tls/target
+
+# Devenv
+.devenv*
+devenv.local.nix
+.direnv
+.pre-commit-config.yaml

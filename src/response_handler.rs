@@ -116,12 +116,12 @@ fn set_http_date() -> String {
     let datetime = chrono::DateTime::<Utc>::from(SystemTime::now());
     let formatted_date = datetime.format("%a, %d %b %Y %H:%M:%S GMT");
 
-    format!("date: {}\r\n", formatted_date)
+    format!("date: {}", formatted_date)
 }
 
 impl ResponseHeader {
     fn into_http_response(self, mut body: Vec<u8>) -> Vec<u8> {
-        let mut http_header = format!("{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n",
+        let mut http_header = format!("{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n\r\n",
             self.status,
             self.server,
             self.content_type,
