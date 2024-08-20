@@ -37,7 +37,7 @@
 		          ];
 
                   enterShell = ''
-                    Echo "Welcome to Polar Bear!"
+                    echo "Welcome to Polar Bear!"
                   '';
                 }
               ];
