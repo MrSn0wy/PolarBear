@@ -10,5 +10,5 @@ codegen-units = 1
 
 [dependencies]
 anyhow = "1.0"
-chrono = { version = "0.4", default-features = false, features = ["std"] }
+chrono = { version = "0.4" }
 artic_tls = { path = "src/artic_tls" }

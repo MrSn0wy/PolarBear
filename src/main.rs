@@ -4,10 +4,9 @@ use std::thread;
 
 use http::http_init::parser;
 
-use crate::http::http_0_9_parser;
-use crate::http::http_0_9_parser::http_0_9_request;
 use crate::http::http_code_handler::handle_error_codes;
 use crate::http::http_init::HttpVersion;
+use crate::http::{http_0_9_parser, http_1_0_parser};
 use crate::needed::Polar;
 
 mod needed;
@@ -69,7 +68,6 @@ fn connection_listener(addr: String) -> anyhow::Result<()> {
                 //let start_time = Instant::now();
 
                 let mut buf_reader = BufReader::new(&mut stream);
-
                 let mut buffer: Vec<String> = vec![];
 
                 loop {
@@ -121,18 +119,10 @@ fn connection_listener(addr: String) -> anyhow::Result<()> {
                             println_cyan!("output: [{:?} | {:?} | {:?}]", request_line.method, request_line.uri, request_line.version);
 
                             match request_line.version {
+                                HttpVersion::HTTP_0_9 => {
+                                    println_green!("HTTP 0.9 request received!");
 
-                                //HttpVersion::HTTP_0_9 => {}
-                                //HttpVersion::HTTP_1_0 => {}
-                                //HttpVersion::HTTP_1_1 => {}
-                                //HttpVersion::HTTP_2_0 => {}
-                                HttpVersion::HTTP_3_0 => {}
-                                _ => {
-                                    let request = http_0_9_request {
-                                        request_line,
-                                    };
-
-                                    let response = http_0_9_parser::give_response(request);
+                                    let response = http_0_9_parser::return_response(request_line);
 
                                     match response {
                                         Polar::Some(response) => {
@@ -141,6 +131,44 @@ fn connection_listener(addr: String) -> anyhow::Result<()> {
                                         }
                                         Polar::Silly(error_code) => {
                                             let html = handle_error_codes(error_code);
+
+                                            stream.write_all(&html)?;
+                                            stream.flush()?;
+                                        }
+                                    }
+                                }
+                                HttpVersion::HTTP_1_0 => {
+                                    let response = http_1_0_parser::return_response(buffer, request_line);
+
+                                    match response {
+                                        Polar::Some(response) => {
+                                            stream.write_all(&response.into_response())?;
+                                            stream.flush()?;
+                                        }
+                                        Polar::Silly(code) => {
+                                            let html = handle_error_codes(code);
+
+                                            stream.write_all(&html)?;
+                                            stream.flush()?;
+                                        }
+                                    }
+                                }
+                                //HttpVersion::HTTP_1_1 => {}
+                                //HttpVersion::HTTP_2_0 => {}
+                                //HttpVersion::HTTP_3_0 => {}
+                                _ => {
+                                    //let html = handle_error_codes(505);
+                                    //
+                                    //stream.write_all(&html)?;
+                                    //stream.flush()?;
+                                    let response = http_1_0_parser::return_response(buffer, request_line);
+                                    match response {
+                                        Polar::Some(response) => {
+                                            stream.write_all(&response.into_response())?;
+                                            stream.flush()?;
+                                        }
+                                        Polar::Silly(code) => {
+                                            let html = handle_error_codes(code);
 
                                             stream.write_all(&html)?;
                                             stream.flush()?;

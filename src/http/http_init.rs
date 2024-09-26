@@ -7,12 +7,19 @@ pub(crate) struct RequestLine {
     pub(crate) version: HttpVersion,
 }
 
+pub(crate) struct StatusLine {
+    pub(crate) version: HttpVersion,
+    pub(crate) status_code: u16,
+    pub(crate) reason_phrase: String,
+}
+
 #[allow(clippy::upper_case_acronyms)] // why clippy, why
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum RequestMethod {
     GET,
     HEAD,
     POST,
+    NotImplemented,
 }
 
 #[allow(non_camel_case_types)] // I am NOT writing the http versions as "Http11" LMAO
@@ -35,37 +42,43 @@ pub(crate) fn parser(http_request_line: &String) -> Polar<RequestLine> {
         None => return Polar::Silly(400), // return 400 (bad request)
     };
 
-    let uri = temp_vec.get(1).unwrap_or(&"/").to_string(); // when it is empty, the server should treat is as "/"
-    let version = *temp_vec.get(2).unwrap_or(&""); // todo! trim leading 0 from the version? idk, rfc is silly
+    let uri = match temp_vec.get(1) {
+        Some(uri) => uri.to_string(),
+        None => return Polar::Silly(400), // return 400 (bad request)
+    };
 
+    let version = match temp_vec.get(2) {
+        Some(version) => *version,
+        None => "", // do this so if it's http 0.9 it can be handled
+    };
 
     // step two, set the enum's
-    let (request_method, http_version) =
-        // HTTP 0.9 doesn't have a version indicator and only supports GET requests.
-        if version.is_empty() && method == "GET" {
-            let request_method = RequestMethod::GET;
-            let http_version = HttpVersion::HTTP_0_9;
-
-            (request_method, http_version)
-        } else {
-            // now we can do the normal http checking for other version, currently only checks for http 1.0 request methods!
-            let request_method = match method {
-                "GET" => RequestMethod::GET,
-                "HEAD" => RequestMethod::HEAD,
-                "POST" => RequestMethod::POST,
-                _ => return Polar::Silly(501), // return 501 (not implemented)
-            };
-
-            let http_version = match version {
-                "HTTP/1.0\r\n" => HttpVersion::HTTP_1_0,
-                "HTTP/1.1\r\n" => HttpVersion::HTTP_1_1,
-                "HTTP/2.0\r\n" => HttpVersion::HTTP_2_0,
-                "HTTP/3.0\r\n" => HttpVersion::HTTP_3_0,
-                _ => return Polar::Silly(505), // return 505 (http version not supported)
-            };
-
-            (request_method, http_version)
+    let (request_method, http_version) = {
+        let request_method = match method {
+            "GET" => RequestMethod::GET,
+            "HEAD" => RequestMethod::HEAD,
+            "POST" => RequestMethod::POST,
+            _ => return Polar::Silly(501), // return 501 (not implemented)
         };
+
+        let http_version = match version {
+            "HTTP/0.9\r\n" => HttpVersion::HTTP_0_9,
+            "HTTP/1.0\r\n" => HttpVersion::HTTP_1_0,
+            "HTTP/1.1\r\n" => HttpVersion::HTTP_1_1,
+            "HTTP/2.0\r\n" => HttpVersion::HTTP_2_0,
+            "HTTP/3.0\r\n" => HttpVersion::HTTP_3_0,
+            _ => {
+                // check if it is http 0.9
+                if version.is_empty() && request_method == RequestMethod::GET {
+                    HttpVersion::HTTP_0_9
+                } else {
+                    return Polar::Silly(505); // return 505 (http version not supported)
+                }
+            }
+        };
+
+        (request_method, http_version)
+    };
 
     // step three, return the struct :D!
     Polar::Some(RequestLine {

@@ -40,7 +40,7 @@ pub(crate) fn path_retriever(uri: String) -> Polar<PathBuf> {
     }
 }
 
-pub(crate) fn file_retriever(path: PathBuf) -> Polar<Vec<u8>> {
+pub(crate) fn file_retriever(path: &PathBuf) -> Polar<Vec<u8>> {
     if path.is_file() {
         match fs::read(&path) {
             Ok(file) => Polar::Some(file),
